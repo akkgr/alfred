@@ -16,6 +16,9 @@ using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using IdentityServer4.Models;
 using IdentityServer4.Stores;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.MongoDB;
+using teleRDV.Models;
 
 namespace IdentityServer4.Quickstart.UI.Controllers
 {
@@ -26,16 +29,16 @@ namespace IdentityServer4.Quickstart.UI.Controllers
     /// </summary>
     public class AccountController : Controller
     {
-        private readonly InMemoryUserLoginService _loginService;
+        private readonly UserManager<User> _userManager;
         private readonly IIdentityServerInteractionService _interaction;
         private readonly IClientStore _clientStore;
 
         public AccountController(
-            InMemoryUserLoginService loginService,
+            UserManager<User> userManager,
             IIdentityServerInteractionService interaction,
             IClientStore clientStore)
         {
-            _loginService = loginService;
+            _userManager = userManager;
             _interaction = interaction;
             _clientStore = clientStore;
         }
@@ -73,12 +76,9 @@ namespace IdentityServer4.Quickstart.UI.Controllers
         {
             if (ModelState.IsValid)
             {
-                // validate username/password against in-memory store
-                if (_loginService.ValidateCredentials(model.Username, model.Password))
+                var identityUser = await _userManager.FindByNameAsync(model.Username);
+                if (identityUser != null && await _userManager.CheckPasswordAsync(identityUser, model.Password))
                 {
-                    // issue authentication cookie with subject ID and username
-                    var user = _loginService.FindByUsername(model.Username);
-
                     AuthenticationProperties props = null;
                     // only set explicit expiration here if persistent. 
                     // otherwise we reply upon expiration configured in cookie middleware.
@@ -91,7 +91,7 @@ namespace IdentityServer4.Quickstart.UI.Controllers
                         };
                     };
 
-                    await HttpContext.Authentication.SignInAsync(user.Subject, user.Username, props);
+                    await HttpContext.Authentication.SignInAsync(identityUser.Id, identityUser.UserName, props);
 
                     // make sure the returnUrl is still valid, and if yes - redirect back to authorize endpoint
                     if (_interaction.IsValidReturnUrl(model.ReturnUrl))
@@ -287,12 +287,14 @@ namespace IdentityServer4.Quickstart.UI.Controllers
             var userId = userIdClaim.Value;
 
             // check if the external user is already provisioned
-            var user = _loginService.FindByExternalProvider(provider, userId);
+            var user = await _userManager.FindByLoginAsync(provider, userId);
             if (user == null)
             {
                 // this sample simply auto-provisions new external user
                 // another common approach is to start a registrations workflow first
-                user = _loginService.AutoProvisionUser(provider, userId, claims);
+                user = new User { UserName = Guid.NewGuid().ToString() };
+                await _userManager.CreateAsync(user);
+                await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, userId, provider));
             }
 
             var additionalClaims = new List<Claim>();
@@ -305,7 +307,7 @@ namespace IdentityServer4.Quickstart.UI.Controllers
             }
 
             // issue authentication cookie for user
-            await HttpContext.Authentication.SignInAsync(user.Subject, user.Username, provider, additionalClaims.ToArray());
+            await HttpContext.Authentication.SignInAsync(user.Id, user.UserName, provider, additionalClaims.ToArray());
 
             // delete temporary cookie used during external authentication
             await HttpContext.Authentication.SignOutAsync(IdentityServerConstants.ExternalCookieAuthenticationScheme);

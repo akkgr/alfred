@@ -1,12 +1,5 @@
-
-using System;
 using System.Collections.Generic;
 using IdentityServer4.Models;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using teleRDV.Models;
 
 namespace alfred
 {
@@ -16,8 +9,6 @@ namespace alfred
         {
             return new List<Scope>
             {
-                StandardScopes.OpenId,
-                StandardScopes.Profile,
                 new Scope
                 {
                     Name = "api1",
@@ -33,14 +24,12 @@ namespace alfred
                 new Client
                 {
                     ClientId = "client",
-
-                    AllowedGrantTypes = GrantTypes.ClientCredentials,
+                    AllowedGrantTypes = GrantTypes.HybridAndClientCredentials,
 
                     ClientSecrets =
                     {
                         new Secret("secret".Sha256())
                     },
-
                     AllowedScopes = { "api1" }
                 }
             };

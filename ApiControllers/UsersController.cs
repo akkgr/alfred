@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Identity.MongoDB;
 namespace teleRDV.Controllers
 {
     [Route("api/[controller]")]
-    [Authorize(Roles = "Administrator")]
+    //[Authorize(Roles = "Administrator")]
     public class UsersController : Controller
     {
         private readonly Context db;

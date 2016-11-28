@@ -1,6 +1,7 @@
 using IdentityServer4;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -31,12 +32,11 @@ namespace alfred
             services.AddTransient<Context>();
             
             services.AddIdentity<User,Role>()
-                .RegisterMongoStores<User, Role>(Configuration.GetConnectionString("DefaultConnection"))
+                .RegisterMongoStores<User, Role>(Configuration.GetConnectionString("DefaultConnection"))                              
                 .AddDefaultTokenProviders();
 
             services.AddIdentityServer()
             .AddTemporarySigningCredential()
-            .AddInMemoryPersistedGrants()
             .AddInMemoryScopes(IdentityServerConfig.GetScopes())
             .AddInMemoryClients(IdentityServerConfig.GetClients())
             .AddAspNetIdentity<User>();

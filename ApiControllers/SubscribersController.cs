@@ -1,11 +1,13 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using teleRDV.Models;
 
 namespace teleRDV.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     public class SubscribersController : Controller
     {
